@@ -1,0 +1,2 @@
+# rungame_sample_rust
+Godot製3DランゲームのRustプラグイン
