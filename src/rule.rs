@@ -1,8 +1,8 @@
 use gdnative::*;
 use gdnative::prelude::*;
 use gdnative::api::*;
-use gdnative::prelude::VariantType::Vector3;
-use ::{GAME_TIME, Player};
+
+const GAME_TIME : f64 = 120.;
 
 #[derive(NativeClass, Default)]
 #[inherit(Node)]
@@ -35,7 +35,8 @@ impl Rule {
     }
 
     #[export]
-    fn _ready(&mut self, owner: &Node) {
+    fn _ready(&mut self, owner: TRef<Node>) {
+        /*
         self.start_timer = Some(unsafe {
             owner
                 .get_node_as::<Timer>("StartTimer")
@@ -50,11 +51,19 @@ impl Rule {
                 .unwrap()
                 .claim()
                 .assume_unique()
-        });
+        });*/
+
+        let goal_area = &mut owner.get_node("World/GoalArea").unwrap();
+        let goal_area = unsafe { goal_area.assume_safe() };
+        
+        goal_area
+            .connect("body_entered", owner, "on_player_finished", VariantArray::new_shared(), 0)
+            .expect("missing goal signal connection")
+        ;
     }
 
     #[export]
-    fn _physics_process(&mut self, owner: &Node, delta: f64) {
+    fn _physics_process(&mut self, _owner: &Node, _delta: f64) {
         match self.state {
             GameState::Ready => {}
             GameState::Game => {}
@@ -73,7 +82,7 @@ impl Rule {
     }
 
     #[export]
-    fn on_game_timer_ended(&mut self, owner: &Node) {
+    fn on_game_timer_ended(&mut self, _owner: &Node) {
         self.end_game();
     }
 
@@ -82,6 +91,16 @@ impl Rule {
         
         if let Some (game_timer) = self.game_timer.as_ref() {
             game_timer.stop();
+        }
+    }
+
+    #[export]
+    fn on_player_finished(&mut self, _owner: &Node, data: Variant) {
+        if let Some(collision) = data.try_to_object::<KinematicBody>() {
+            unsafe {
+                let player = collision.assume_safe();
+                player.call("stop", &[]); 
+            }
         }
     }
 }
