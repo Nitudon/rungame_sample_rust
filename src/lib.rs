@@ -2,6 +2,7 @@ extern crate gdnative;
 
 mod player;
 mod rule;
+mod field;
 
 use gdnative::prelude::*;
 use player::Player;
