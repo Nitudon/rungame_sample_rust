@@ -49,8 +49,6 @@ impl AccelerationField {
         player.map_mut(|player, _owner| {
             self.on_player_entered(player);
         }).expect("Player Scriptへのmutableな参照に失敗した");
-        
-        godot_print!("player_enter");
     }
 }
 
@@ -95,8 +93,6 @@ impl GoalField {
         player.map_mut(|player, _owner| {
             self.on_player_entered(player);
         }).expect("Player Scriptへのmutableな参照に失敗した");
-
-        godot_print!("player_enter");
     }
 }
 

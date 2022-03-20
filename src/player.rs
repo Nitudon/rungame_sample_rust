@@ -19,7 +19,7 @@ pub struct Player {
     
     move_velocity: Vector3,
     is_dead: bool,
-    is_finish: bool,
+    is_active: bool,
     collision_shape: Option<Ref<CollisionShape>>,
 }
 
@@ -39,7 +39,7 @@ impl Player {
     #[export]
     fn _ready(&mut self, owner: &KinematicBody) {
         self.is_dead = false;
-        self.is_finish = false;
+        self.is_active = false;
         self.move_velocity = Vector3::zero();
         self.collision_shape = Some(unsafe {
             owner
@@ -51,7 +51,7 @@ impl Player {
 
     #[export]
     fn _physics_process(&mut self, owner: &KinematicBody, delta: f64) {
-        if self.is_dead == false && self.is_finish == false {
+        if self.is_dead == false && self.is_active {
             let is_on_floor = owner.is_on_floor();
             let input = Input::godot_singleton();
             if self.move_velocity.z < self.max_forward_speed {
@@ -90,6 +90,10 @@ impl Player {
         });
     }
     
+    pub fn set_active(&mut self, active: bool) {
+        self.is_active = active;
+    }
+    
     pub fn accelerate(&mut self, value: f32) {
         if self.is_dead {
             return;
@@ -110,7 +114,7 @@ impl Player {
 
     pub fn stop(&mut self) {
         self.move_velocity = Vector3::zero();
-        self.is_finish = true;
+        self.is_active = false;
 
         godot_print!("stop player")
     }
