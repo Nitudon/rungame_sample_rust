@@ -77,18 +77,6 @@ impl Player {
             self.move_velocity = owner.move_and_slide(self.move_velocity, Vector3::new(0., 1., 0.), false, 5, 3., false);
         }
     }
-    
-    #[export]
-    fn on_hit_obstacle(&mut self, _owner: &KinematicBody) {
-    }
-
-    #[export]
-    fn stop(&mut self, _owner: &KinematicBody) {
-        self.move_velocity = Vector3::zero();
-        self.is_finish = true;
-        
-        godot_print!("stop player")
-    }
 
     fn register_signals(builder: &ClassBuilder<Self>) {
         builder.add_signal(Signal {
@@ -116,5 +104,14 @@ impl Player {
         }
         
         self.move_velocity.y = self.jump_power;
+        
+        godot_print!("jump")
+    }
+
+    pub fn stop(&mut self) {
+        self.move_velocity = Vector3::zero();
+        self.is_finish = true;
+
+        godot_print!("stop player")
     }
 }

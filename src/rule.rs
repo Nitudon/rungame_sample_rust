@@ -52,14 +52,6 @@ impl Rule {
                 .claim()
                 .assume_unique()
         });*/
-
-        let goal_area = &mut owner.get_node("World/GoalArea").unwrap();
-        let goal_area = unsafe { goal_area.assume_safe() };
-        
-        goal_area
-            .connect("body_entered", owner, "on_player_finished", VariantArray::new_shared(), 0)
-            .expect("missing goal signal connection")
-        ;
     }
 
     #[export]
