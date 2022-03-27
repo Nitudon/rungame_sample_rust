@@ -3,6 +3,7 @@ extern crate gdnative;
 mod player;
 mod rule;
 mod field;
+mod screen;
 
 use gdnative::prelude::*;
 use field::{AccelerationField, GoalField};
