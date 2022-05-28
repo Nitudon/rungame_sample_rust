@@ -63,12 +63,12 @@ impl Rule {
                 let screen = unsafe {
                     owner
                         .get_node_as_instance::<Screen>("Screen")
-                        .expect("Screenに該当するKinematicBodyからPlayer Scriptが取得できなかった")
+                        .expect("Screenが取得できなかった")
                 };
                 if let Some(start_timer) = &self.start_timer {
                     screen.map_mut(|screen, _| {
                         screen.set_countdown(start_timer.time_left() as i64);
-                    }).expect("Player Scriptへのmutableな参照に失敗した");
+                    }).expect("Screenを参照できなかった");
                 }
             }
             GameState::Game => {
@@ -76,21 +76,21 @@ impl Rule {
                 let screen = unsafe {
                     owner
                         .get_node_as_instance::<Screen>("Screen")
-                        .expect("Playerに該当するKinematicBodyからPlayer Scriptが取得できなかった")
+                        .expect("Screenが取得できなかった")
                 };
 
                 let player = unsafe {
                     owner
                         .get_node_as_instance::<Player>("World/Player")
-                        .expect("Player Scriptが取得できなかった")
+                        .expect("Playerが取得できなかった")
                 };
                 
                 screen.map_mut(|screen, _| {
                     screen.set_time(self.time);
                     player.map(|player, _| {
                         screen.set_player_speed(player.move_velocity.z as f64)
-                    }).expect("Player Scriptへのmutableな参照に失敗した");
-                }).expect("Screen Scriptへのmutableな参照に失敗した");
+                    }).expect("Playerを参照できなかった");
+                }).expect("Screenを参照できなかった");
             }
             GameState::Over => {}
         }
@@ -106,11 +106,11 @@ impl Rule {
         let screen = unsafe {
             owner
                 .get_node_as_instance::<Screen>("Screen")
-                .expect("Playerに該当するKinematicBodyからPlayer Scriptが取得できなかった")
+                .expect("Screenを取得できなかった")
         };
         screen.map_mut(|screen, _| {
             screen.set_screen_state(GameState::Ready);
-        }).expect("Player Scriptへのmutableな参照に失敗した");
+        }).expect("Screenを参照できなかった");
         
         godot_print!("game init");
     }
@@ -124,23 +124,23 @@ impl Rule {
         let player = unsafe {
             owner
                 .get_node_as_instance::<Player>("World/Player")
-                .expect("Playerに該当するKinematicBodyからPlayer Scriptが取得できなかった")
+                .expect("Playerを取得できなかった")
         };
 
         player.map_mut(|player, _owner| {
             player.set_active(true);
-        }).expect("Player Scriptへのmutableな参照に失敗した");
+        }).expect("Playerを参照できなかった");
 
         self.time = 0.;
         self.state = GameState::Game;
         let screen = unsafe {
             owner
                 .get_node_as_instance::<Screen>("Screen")
-                .expect("Playerに該当するKinematicBodyからPlayer Scriptが取得できなかった")
+                .expect("Screenを取得できなかった")
         };
         screen.map_mut(|screen, _| {
             screen.set_screen_state(GameState::Game);
-        }).expect("Player Scriptへのmutableな参照に失敗した");
+        }).expect("Screenを参照できなかった");
         
         self.time = 0.;
         godot_print!("game start");

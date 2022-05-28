@@ -74,11 +74,6 @@ impl Player {
 
     fn register_signals(builder: &ClassBuilder<Self>) {
         builder.add_signal(Signal {
-            name: "on_player_dead",
-            args: &[],
-        });
-
-        builder.add_signal(Signal {
             name: "stop",
             args: &[],
         });
