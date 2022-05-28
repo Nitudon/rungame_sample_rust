@@ -1,119 +1,110 @@
 use gdnative::*;
 use gdnative::prelude::*;
 use gdnative::api::*;
+use rule::GameState;
 
 #[derive(NativeClass, Default)]
-#[inherit(Node)]
-pub struct  {
-    state: GameState,
-    point: i32,
-
-    start_timer: Option<Ref<Timer, Unique>>,
-    game_timer: Option<Ref<Timer, Unique>>,
-}
-
-pub enum GameState {
-    Ready,
-    Game,
-    Over,
-}
-
-impl Default for GameState {
-    fn default() -> Self {
-        GameState::Ready
-    }
+#[inherit(Control)]
+pub struct Screen {
+    // Screen
+    start_screen: Option<Ref<Control, Unique>>,
+    game_screen: Option<Ref<Control, Unique>>, 
+    
+    // Start UI
+    countdown_label: Option<Ref<Label, Unique>>,
+    
+    // Game UI
+    time_label: Option<Ref<Label, Unique>>,
+    speed_label: Option<Ref<Label, Unique>>,
 }
 
 #[gdnative::methods]
-impl Rule {
-    fn new(_owner: &Node) -> Self {
-        Rule {
+impl Screen {
+    fn new(_owner: &Control) -> Self {
+        Screen {
             ..Default::default()
         }
     }
 
     #[export]
-    fn _ready(&mut self, owner: &Node) {
+    fn _ready(&mut self, owner: &Control) {
         unsafe {
-            let node = owner
-                .get_node(".")
-                .unwrap()
-                .assume_safe();
-
-            let start_timer = owner
-                .get_node_as::<Timer>("StartTimer")
+            let start_screen = owner
+                .get_node_as::<Control>("StartScreen")
                 .unwrap();
 
-            let game_timer = owner
-                .get_node_as::<Timer>("GameTimer")
+            self.start_screen = Some(start_screen.assume_unique());
+
+            let game_screen = owner
+                .get_node_as::<Control>("GameScreen")
                 .unwrap();
 
-            start_timer
-                .connect("timeout", node, "start_game", VariantArray::new_shared(), 0)
+            self.game_screen = Some(game_screen.assume_unique());
+
+            let countdown_label = owner
+                .get_node_as::<Label>("StartScreen/Countdown")
                 .unwrap();
-            self.start_timer = Some(start_timer.claim().assume_unique());
-            self.game_timer = Some(game_timer.claim().assume_unique());
+            self.countdown_label = Some(countdown_label.assume_unique());
 
-            self.ready_game(owner);
+            let time_label = owner
+                .get_node_as::<Label>("GameScreen/Time")
+                .unwrap();
+            self.time_label = Some(time_label.assume_unique());
+
+            let speed_label = owner
+                .get_node_as::<Label>("GameScreen/Speed")
+                .unwrap();
+            self.speed_label = Some(speed_label.assume_unique());
         }
     }
 
     #[export]
-    fn _physics_process(&mut self, _owner: &Node, _delta: f64) {
-        match self.state {
-            GameState::Ready => {}
-            GameState::Game => {}
-            GameState::Over => {}
-        }
+    fn _physics_process(&mut self, _owner: &Control, _delta: f64) {
     }
-
-    #[export]
-    fn ready_game(&mut self, owner: &Node) {
-        if let Some (start_timer) = self.start_timer.as_ref() {
-            start_timer.start(GAME_START_INTERVAL);
-        }
-
-        godot_print!("game init");
-    }
-
-    #[export]
-    fn start_game(&mut self, owner: &Node) {
-        if let Some (start_timer) = self.start_timer.as_ref() {
-            start_timer.stop();
-        }
-
-        if let Some (game_timer) = self.game_timer.as_ref() {
-            game_timer.start(GAME_TIME);
-        }
-
-        let player = unsafe {
-            owner
-                .get_node_as_instance::<Player>("World/Player")
-                .expect("Playerに該当するKinematicBodyからPlayer Scriptが取得できなかった")
-        };
-
-        player.map_mut(|player, _owner| {
-            player.set_active(true);
-        }).expect("Player Scriptへのmutableな参照に失敗した");
-
-        godot_print!("game start");
-    }
-
-    fn end_game(&mut self) {
-        self.state = GameState::Over;
-
-        if let Some (game_timer) = self.game_timer.as_ref() {
-            game_timer.stop();
-        }
-    }
-
-    #[export]
-    fn on_player_finished(&mut self, _owner: &Node, data: Variant) {
-        if let Some(collision) = data.try_to_object::<KinematicBody>() {
-            unsafe {
-                let player = collision.assume_safe();
-                player.call("stop", &[]);
+    
+    pub fn set_screen_state(&mut self, state: GameState) {
+        let mut start_screen_active = false;
+        let mut game_screen_active = false;
+        match state {
+            GameState::Ready => {
+                start_screen_active = true;
+                game_screen_active = false;
+            }
+            GameState::Game => {
+                start_screen_active = false;
+                game_screen_active = true;
+            }
+            GameState::Over => {
+                start_screen_active = false;
+                game_screen_active = false;
             }
         }
+
+        godot_print!("{},{}", start_screen_active, game_screen_active);
+        
+        self.start_screen.as_ref().unwrap().set_visible(start_screen_active);
+        self.game_screen.as_ref().unwrap().set_visible(game_screen_active);
+    }
+    
+    pub fn set_player_speed(&mut self, speed: f64) {
+        if let Some(speed_label) = &self.speed_label {
+            speed_label.set_text(format!("{:.1}km/h", speed));
+        }
+    }
+
+    pub fn set_countdown(&mut self, count: i64) {
+        if let Some(countdown_label) = &self.countdown_label {
+            if count > 0 {
+                countdown_label.set_text(format!("{}", count)); 
+            } else {
+                countdown_label.set_text("GO!");
+            }
+        }
+    }
+    
+    pub fn set_time(&mut self, time: f64) {
+        if let Some(time_label) = &self.time_label {
+            time_label.set_text(format!("Time: {:.3}", time));
+        } 
     }
 }

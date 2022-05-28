@@ -1,7 +1,7 @@
 use gdnative::*;
 use gdnative::prelude::*;
 use gdnative::api::*;
-use Player;
+use ::{Player, Rule};
 
 pub trait Field {
     fn on_player_entered(&self, player: &mut Player);
@@ -36,19 +36,18 @@ impl AccelerationField {
 
     #[export]
     fn body_entered(&mut self, owner: &Area, data: Variant) {
-        let player_node = unsafe {
-            data
-                .try_to_object::<KinematicBody>()
-                .expect("Playerに該当するKinematicBody Nodeが取得できなかった")
-                .assume_safe()
-        };
-        let player = player_node
-            .cast_instance::<Player>()
-            .expect("Playerに該当するKinematicBodyからPlayer Scriptが取得できなかった");
+        unsafe {
+            let kinematic_body = data.try_to_object::<RigidBody>();
+            if kinematic_body.is_none() {
+                return;
+            }
 
-        player.map_mut(|player, _owner| {
-            self.on_player_entered(player);
-        }).expect("Player Scriptへのmutableな参照に失敗した");
+            if let Some(player) = kinematic_body.unwrap().assume_safe().cast_instance::<Player>() {
+                player.map_mut(|player, _owner| {
+                    self.on_player_entered(player);
+                }).expect("Player Scriptへのmutableな参照に失敗した");
+            }
+        }
     }
 }
 
@@ -80,19 +79,25 @@ impl GoalField {
 
     #[export]
     fn body_entered(&mut self, owner: &Area, data: Variant) {
-        let player_node = unsafe {
-            data
-                .try_to_object::<KinematicBody>()
-                .expect("Playerに該当するKinematicBody Nodeが取得できなかった")
-                .assume_safe()
-        };
-        let player = player_node
-            .cast_instance::<Player>()
-            .expect("Playerに該当するKinematicBodyからPlayer Scriptが取得できなかった");
-        
-        player.map_mut(|player, _owner| {
-            self.on_player_entered(player);
-        }).expect("Player Scriptへのmutableな参照に失敗した");
+        unsafe {
+            let kinematic_body = data.try_to_object::<RigidBody>();
+            if kinematic_body.is_none() {
+                return;
+            }
+
+            if let Some(player) = kinematic_body.unwrap().assume_safe().cast_instance::<Player>() {
+                player.map_mut(|player, _owner| {
+                    self.on_player_entered(player);
+                }).expect("Player Scriptへのmutableな参照に失敗した");
+
+                let root = owner.get_node_as_instance::<Rule>("/root/Root");
+                if let Some(rule) = root {
+                    rule.map_mut(|rule, _| {
+                        rule.end_game();
+                    }).expect("Player Scriptへのmutableな参照に失敗した"); 
+                }
+            }
+        }
     }
 }
 
