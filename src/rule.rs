@@ -1,5 +1,6 @@
 use gdnative::*;
 use gdnative::prelude::*;
+use gdnative::api::*;
 use ::{Player, Screen};
 
 const GAME_START_INTERVAL : f64 = 3.;
@@ -132,7 +133,7 @@ impl Rule {
 
     #[export]
     fn on_player_finished(&mut self, _owner: &Node, data: Variant) {
-        if let Some(collision) = data.try_to_object::<KinematicBody>() {
+        if let Some(collision) = data.try_to_object::<RigidBody>() {
             unsafe {
                 let player = collision.assume_safe();
                 player.call("stop", &[]); 
