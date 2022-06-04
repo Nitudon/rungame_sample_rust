@@ -32,10 +32,10 @@ impl AccelerationField {
     }
 
     #[export]
-    fn _physics_process(&mut self, owner: &Area, delta: f64) {}
+    fn _physics_process(&mut self, _owner: &Area, _delta: f64) {}
 
     #[export]
-    fn body_entered(&mut self, owner: &Area, data: Variant) {
+    fn body_entered(&mut self, _owner: &Area, data: Variant) {
         unsafe {
             let kinematic_body = data.try_to_object::<RigidBody>();
             if kinematic_body.is_none() {
@@ -80,12 +80,12 @@ impl GoalField {
     #[export]
     fn body_entered(&mut self, owner: &Area, data: Variant) {
         unsafe {
-            let kinematic_body = data.try_to_object::<RigidBody>();
-            if kinematic_body.is_none() {
+            let rigid_body = data.try_to_object::<RigidBody>();
+            if rigid_body.is_none() {
                 return;
             }
 
-            if let Some(player) = kinematic_body.unwrap().assume_safe().cast_instance::<Player>() {
+            if let Some(player) = rigid_body.unwrap().assume_safe().cast_instance::<Player>() {
                 player.map_mut(|player, _owner| {
                     self.on_player_entered(player);
                 }).expect("Player Scriptへのmutableな参照に失敗した");

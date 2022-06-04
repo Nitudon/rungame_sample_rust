@@ -1,21 +1,20 @@
-use std::any::Any;
 use gdnative::*;
 use gdnative::prelude::*;
-use gdnative::api::*;
 use ::{Player, Screen};
 
 const GAME_START_INTERVAL : f64 = 3.;
-const GAME_TIME : f64 = 120.;
 
 #[derive(NativeClass, Default)]
 #[inherit(Node)]
-pub struct Rule {
+pub struct Rule{
     state: GameState,
     time: f64,
     
     start_timer: Option<Ref<Timer, Unique>>,
+    screen: Screen,
 }
 
+#[derive(PartialEq)]
 pub enum GameState {
     Ready,
     Game,
@@ -39,11 +38,8 @@ impl Rule {
     #[export]
     fn _ready(&mut self, owner: &Node) {
         unsafe {
-            let node = owner
-                .get_node(".")
-                .unwrap()
-                .assume_safe();
-
+            let node = owner.get_node(".").unwrap();
+            
             let start_timer = owner
                 .get_node_as::<Timer>("StartTimer")
                 .unwrap();
@@ -51,66 +47,53 @@ impl Rule {
             start_timer
                 .connect("timeout", node, "start_game", VariantArray::new_shared(), 0)
                 .unwrap();
-            self.start_timer = Some(start_timer.claim().assume_unique());
-            self.ready_game(owner);
+            self.start_timer = Some(start_timer
+                .claim()
+                .assume_unique());
+            
+            let screen_node = owner
+                .get_node("Screen")
+                .unwrap()
+                .assume_safe();
+            self.screen = Screen::new(&screen_node);
+            
+            self.ready_game();
         }
     }
 
     #[export]
     fn _physics_process(&mut self, owner: &Node, delta: f64) {
+        let screen = &mut self.screen;
         match &self.state {
             GameState::Ready => {
-                let screen = unsafe {
-                    owner
-                        .get_node_as_instance::<Screen>("Screen")
-                        .expect("Screenが取得できなかった")
-                };
                 if let Some(start_timer) = &self.start_timer {
-                    screen.map_mut(|screen, _| {
-                        screen.set_countdown(start_timer.time_left() as i64);
-                    }).expect("Screenを参照できなかった");
+                    screen.set_countdown(start_timer.time_left() as i64);
                 }
             }
             GameState::Game => {
                 self.time += delta;
-                let screen = unsafe {
-                    owner
-                        .get_node_as_instance::<Screen>("Screen")
-                        .expect("Screenが取得できなかった")
-                };
-
                 let player = unsafe {
                     owner
                         .get_node_as_instance::<Player>("World/Player")
                         .expect("Playerが取得できなかった")
                 };
-                
-                screen.map_mut(|screen, _| {
-                    screen.set_time(self.time);
-                    player.map(|player, _| {
-                        screen.set_player_speed(player.move_velocity.z as f64)
-                    }).expect("Playerを参照できなかった");
-                }).expect("Screenを参照できなかった");
+
+                screen.set_time(self.time);
+                player.map(|player, _| {
+                    screen.set_player_speed(player.move_velocity.z as f64)
+                }).expect("Playerを参照できなかった");
             }
             GameState::Over => {}
         }
     }
     
-    #[export]
-    fn ready_game(&mut self, owner: &Node) {
+    fn ready_game(&mut self) {
         if let Some (start_timer) = self.start_timer.as_ref() {
             start_timer.start(GAME_START_INTERVAL);
         }
 
         self.state = GameState::Ready;
-        let screen = unsafe {
-            owner
-                .get_node_as_instance::<Screen>("Screen")
-                .expect("Screenを取得できなかった")
-        };
-        screen.map_mut(|screen, _| {
-            screen.set_screen_state(GameState::Ready);
-        }).expect("Screenを参照できなかった");
+        self.screen.set_screen_state(GameState::Ready);
         
         godot_print!("game init");
     }
@@ -133,14 +116,7 @@ impl Rule {
 
         self.time = 0.;
         self.state = GameState::Game;
-        let screen = unsafe {
-            owner
-                .get_node_as_instance::<Screen>("Screen")
-                .expect("Screenを取得できなかった")
-        };
-        screen.map_mut(|screen, _| {
-            screen.set_screen_state(GameState::Game);
-        }).expect("Screenを参照できなかった");
+        self.screen.set_screen_state(GameState::Game);
         
         self.time = 0.;
         godot_print!("game start");
@@ -148,6 +124,10 @@ impl Rule {
 
     pub fn end_game(&mut self) {
         self.state = GameState::Over;
+        self.screen.set_screen_state(GameState::Over);
+        self.screen.set_clear_time(self.time);
+
+        godot_print!("game end");
     }
 
     #[export]
