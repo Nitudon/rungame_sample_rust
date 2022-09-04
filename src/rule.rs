@@ -1,6 +1,5 @@
 use gdnative::*;
 use gdnative::prelude::*;
-use gdnative::api::*;
 use ::{Player, Screen};
 
 const GAME_START_INTERVAL : f64 = 3.;
@@ -38,9 +37,9 @@ impl Rule {
 
     #[export]
     fn _ready(&mut self, owner: &Node) {
+        // 各種Godotのオブジェクトを参照しに行く
+        let node = owner.get_node(".").unwrap();
         unsafe {
-            let node = owner.get_node(".").unwrap();
-            
             let start_timer = owner
                 .get_node_as::<Timer>("StartTimer")
                 .unwrap();
@@ -57,29 +56,34 @@ impl Rule {
                 .unwrap()
                 .assume_safe();
             self.screen = Screen::new(&screen_node);
-            
-            self.ready_game();
         }
+
+        // ゲームロジックの準備処理
+        self.ready_game();
     }
 
     #[export]
     fn _physics_process(&mut self, owner: &Node, delta: f64) {
         let screen = &mut self.screen;
+        // ゲームステートの監視
         match &self.state {
             GameState::Ready => {
+                // カウントダウンするUIの更新
                 if let Some(start_timer) = &self.start_timer {
                     screen.set_countdown(start_timer.time_left() as i64);
                 }
             }
             GameState::Game => {
+                // 時間の更新
                 self.time += delta;
+                screen.set_time(self.time);
+
                 let player = unsafe {
                     owner
                         .get_node_as_instance::<Player>("World/Player")
                         .expect("Playerが取得できなかった")
                 };
 
-                screen.set_time(self.time);
                 player.map(|player, _| {
                     screen.set_player_speed(player.move_velocity.z as f64)
                 }).expect("Playerを参照できなかった");
@@ -89,14 +93,12 @@ impl Rule {
     }
     
     fn ready_game(&mut self) {
-        if let Some (start_timer) = self.start_timer.as_ref() {
-            start_timer.start(GAME_START_INTERVAL);
-        }
-
         self.state = GameState::Ready;
         self.screen.set_screen_state(GameState::Ready);
         
-        godot_print!("game init");
+        if let Some (start_timer) = self.start_timer.as_ref() {
+            start_timer.start(GAME_START_INTERVAL);
+        }
     }
 
     #[export]
@@ -118,26 +120,11 @@ impl Rule {
         self.time = 0.;
         self.state = GameState::Game;
         self.screen.set_screen_state(GameState::Game);
-        
-        self.time = 0.;
-        godot_print!("game start");
     }
 
     pub fn end_game(&mut self) {
         self.state = GameState::Over;
         self.screen.set_screen_state(GameState::Over);
         self.screen.set_clear_time(self.time);
-
-        godot_print!("game end");
-    }
-
-    #[export]
-    fn on_player_finished(&mut self, _owner: &Node, data: Variant) {
-        if let Some(collision) = data.try_to_object::<RigidBody>() {
-            unsafe {
-                let player = collision.assume_safe();
-                player.call("stop", &[]); 
-            }
-        }
     }
 }

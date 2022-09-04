@@ -26,6 +26,7 @@ impl Screen {
             ..Default::default()
         };
         
+        // GodotのUIオブジェクトの参照
         unsafe {
             screen.start_screen = Some(screen_root
                 .get_node_as::<Control>("StartScreen")
