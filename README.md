@@ -9,6 +9,11 @@ Rust plugins in [**rungame_sample_godot**](https://github.com/Nitudon/rungame_sa
 
  - [**gdnative**](https://github.com/godot-rust/godot-rust): GDNative bindings for Rust
 
+## Reference
+
+ - [Godot + Rust + wasmによる3Dブラウザゲームの作り方またはRustはゲーム制作向き言語なのかの考察的な何か](https://qiita.com/namn1125/items/9ef8f147317114545b51)
+ - [Stable Docs of godot-rust](https://docs.rs/gdnative/latest/gdnative/)
+
 ## License
 
 [MIT license](LICENSE)
